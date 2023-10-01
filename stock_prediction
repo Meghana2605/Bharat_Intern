@@ -1,0 +1,48 @@
+import numpy as np
+import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+import matplotlib.pyplot as plt
+
+# Load the stock price data from Excel
+df = pd.read_csv('fundamentals.csv')
+df.rename(columns={'Pre-Tax Margin': 'Close'}, inplace=True)
+
+# Extract the closing price
+closing_price = df['Close']
+
+# Scale the data
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler(feature_range=(0, 1))
+closing_price_scaled = scaler.fit_transform(closing_price.values.reshape(-1, 1))
+
+# Split the data into training and testing sets
+X_train = closing_price_scaled[:100]
+X_test = closing_price_scaled[100:]
+y_train = X_train
+y_test = X_test
+
+
+# Reshape the data for the LSTM model
+X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1])
+X_test = X_test.reshape(X_test.shape[0], 1, X_test.shape[1])
+
+# Define the LSTM model
+model = Sequential()
+model.add(LSTM(128, input_shape=(X_train.shape[1], X_train.shape[2])))
+model.add(Dense(1))
+
+# Compile the model
+model.compile(loss='mse', optimizer='adam')
+
+# Train the model
+model.fit(X_train, y_train, epochs=100)
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Inverse scale the predictions
+y_pred_scaled = scaler.inverse_transform(y_pred)
+
+# Print the predictions
+print(y_pred_scaled)
